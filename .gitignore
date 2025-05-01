@@ -21,3 +21,7 @@ build/
 
 # Prisma generated client
 /prisma/generated/
+
+# Ignore all files in the prisma folder except schema.prisma
+prisma/*
+!prisma/schema.prisma

@@ -1,0 +1,117 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url = env("DATABASE_URL")
+}
+
+enum UserType {
+    ADMIN
+    EMPLOYER
+    EMPLOYEE
+}
+
+model User {
+    id                   String         @id @default(uuid())
+    accountNumber        String         @unique     
+    email                String?        @unique
+    password             String
+    name                 String
+    type                 UserType
+    provider             String?
+    providerId           String?
+    emailVerified        Boolean        @default(false)
+    savedJobs            SavedJob[]
+    savedEmployees       SavedEmployee[] @relation("EmployerSavedEmployees") 
+    savedEmployers       SavedEmployee[] @relation("EmployeeSavedEmployers")  
+    messagesSent         Message[]      @relation("SenderMessages")
+    messagesReceived     Message[]      @relation("ReceiverMessages")
+    companies            Company[]      
+    createdAt            DateTime       @default(now())
+    updatedAt            DateTime       @updatedAt
+}
+
+model Job {
+    id  String @id @default(uuid())
+    jobCode String@unique
+    title String
+    description String
+    location String
+    salaryMin Int
+    salaryMax Int 
+    createdAt            DateTime       @default(now())
+    updatedAt            DateTime       @updatedAt              
+    employmentTypeId String
+    employmentType EmploymentType @relation(fields:[employmentTypeId], references:[id])        
+    departmentId String
+    department Department @relation(fields:[departmentId], references:[id])       
+    industryId String
+    industry Industry @relation(fields:[industryId], references:[id])    
+    companyId String?
+    company Company? @relation("CompanyJobs", fields: [companyId], references: [id])        
+    SavedBy SavedJob[]    
+
+    @@index([companyId])
+}
+
+model Message {
+    id String @id @default(uuid())
+    senderId String
+    receiverId String
+    sender User @relation("SenderMessages", fields: [senderId], references: [id])
+    receiver User @relation("ReceiverMessages", fields: [receiverId], references: [id])
+    content String
+    createdAt DateTime @default(now())
+}
+
+model Company {
+    id String  @id @default(uuid())
+    companyCode String? @unique
+    name String
+    description String
+    industry String
+    logoUrl String?
+    employerId String
+    employer User @relation(fields: [employerId], references: [id])
+    jobs Job[] @relation("CompanyJobs")
+    createdAt            DateTime       @default(now())
+    updatedAt            DateTime       @updatedAt
+}
+
+model SavedJob {
+    id String @id @default(uuid()) 
+    userId String
+    user User @relation(fields: [userId], references:[id])
+    jobId String
+    job Job @relation(fields: [jobId], references:[id])
+    createdAt DateTime @default(now())
+
+    @@unique([userId, jobId])
+}
+
+model SavedEmployee{
+    id String @id @default(uuid())
+    employerId String
+    employer User @relation(name: "EmployerSavedEmployees",fields: [employerId], references:[id])
+    employeeId String
+    employee User @relation(name:"EmployeeSavedEmployers", fields: [employeeId], references: [id])
+    createdAt DateTime @default(now())
+} 
+
+model EmploymentType {
+    id String @id @default(uuid())
+    name String @unique
+    jobs Job[]
+}
+model Industry {
+    id String @id @default(uuid())
+    name String @unique
+    jobs Job[]
+}
+model Department {
+    id String @id @default(uuid())
+    name String @unique
+    jobs Job[]
+}
